@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Puzzle UCS Visualizer</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Space Grotesk & JetBrains Mono -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-subtle shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#home" onclick="navigate('home')">8-Puzzle AI Visualizer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-home" href="#home" onclick="navigate('home')">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-solver" href="#solver" onclick="navigate('solver')">Solver</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-comparison" href="#comparison"
+                            onclick="navigate('comparison')">Comparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-info" href="#info" onclick="navigate('info')">Algorithm Info</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="container my-5">
+
+        <!-- Home Section -->
+        <section id="home" class="page-section">
+            <div class="p-5 mb-4 bg-body-tertiary rounded-3 shadow-sm text-center">
+                <div class="container-fluid py-5">
+                    <h1 class="display-5 fw-bold mb-3">Interactive 8-Puzzle Problem Solver</h1>
+                    <p class="col-md-8 mx-auto fs-5 text-secondary">
+                        A state-space search algorithm visualization tool demonstrating how Uniform Cost Search (UCS)
+                        navigates a problem space to find the optimal solution.
+                    </p>
+
+                    <div class="mt-5 text-start d-inline-block text-secondary border"
+                        style="padding: 20px; border-radius: 10px;">
+                        <h5 class="fw-bold text-light">Project Details</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Course Name:</strong> Artificial Intelligence</li>
+                            <li><strong>Assignment Title:</strong> Interactive 8-Puzzle Problem Solver using AI Search
+                                Algorithms</li>
+                            <li><strong>Student Name:</strong> Harsha Nethra</li>
+                            <li><strong>Registration No:</strong> 24BCT0107</li>
+                            <li><strong>Algorithm Used:</strong> Uniform Cost Search (UCS)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Introduction to the 8-Puzzle Problem -->
+                    <section id="introduction" style="text-align: left; margin-top: 50px;">
+                        <div class="p-4 p-md-5 mb-4 bg-body-tertiary rounded-3">
+                            <h2 class="fw-bold mb-3">Introduction to the 8-Puzzle Problem</h2>
+
+                            <p class="text-secondary">
+                                The <strong>8-Puzzle</strong> is a classic artificial intelligence problem
+                                consisting of a 3×3 grid containing eight numbered tiles and one empty space.
+                                The objective is to move the tiles by sliding them into the empty space until
+                                the board reaches a specified goal configuration.
+                            </p>
+
+                            <p class="text-secondary">
+                                Each arrangement of the puzzle represents a <strong>state</strong>, while
+                                moving a tile into the empty space produces a new state. The complete set of
+                                possible arrangements forms a <strong>state space</strong>. A search algorithm
+                                explores this state space to find a sequence of valid moves from the initial
+                                state to the goal state.
+                            </p>
+
+                            <h4 class="fw-bold mt-4 mb-2">How the Puzzle Works</h4>
+
+                            <p class="text-secondary">
+                                The empty space can move <strong>up, down, left, or right</strong>, provided
+                                that the corresponding position exists on the board. Each valid movement
+                                generates a successor state. Starting from the initial configuration, a search
+                                algorithm repeatedly evaluates these states until the goal configuration is
+                                reached.
+                            </p>
+
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded-3 h-100">
+                                        <h5 class="fw-bold">Initial State</h5>
+                                        <p class="text-secondary mb-0">
+                                            The starting arrangement of the eight tiles and the empty space.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded-3 h-100">
+                                        <h5 class="fw-bold">Successor States</h5>
+                                        <p class="text-secondary mb-0">
+                                            New puzzle configurations produced by valid movements of the empty space.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded-3 h-100">
+                                        <h5 class="fw-bold">Goal State</h5>
+                                        <p class="text-secondary mb-0">
+                                            The target configuration that the search algorithm attempts to reach.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="fw-bold mt-4 mb-2">8-Puzzle as a Search Problem</h4>
+
+                            <p class="text-secondary">
+                                The 8-Puzzle can be modeled as a <strong>state-space search problem</strong>.
+                                The initial configuration acts as the starting state, the desired configuration
+                                is the goal state, and each legal tile movement represents an action that
+                                transitions the puzzle to another state.
+                            </p>
+
+                            <p class="text-secondary mb-0">
+                                In this application, <strong>Uniform Cost Search (UCS)</strong> is used to explore
+                                the state space. UCS expands the node with the lowest accumulated path cost,
+                                allowing the application to demonstrate how an uninformed search algorithm
+                                systematically explores possible solutions.
+                            </p>
+                        </div>
+                    </section>
+
+                    <div class="mt-5">
+                        <button class="btn btn-primary btn-lg px-4 gap-100" onclick="navigate('solver')">Start
+                            Solver</button>
+                        <button class="btn btn-outline-secondary btn-lg px-4" onclick="navigate('info')">Learn about
+                            UCS</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Solver Section -->
+        <section id="solver" class="page-section d-none">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2 class="fw-bold">8-Puzzle Solver</h2>
+                    <p class="text-secondary">Configure your initial and goal states, then run Uniform Cost Search to
+                        visualize the solution process.</p>
+                </div>
+            </div>
+
+            <!-- Placeholder for Solver UI -->
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-dark-subtle fw-semibold">Configuration</div>
+                        <div class="card-body">
+                            <p class="text-muted">Puzzle configuration controls will go here.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-dark-subtle fw-semibold">Visualization</div>
+                        <div class="card-body">
+                            <p class="text-muted">Interactive puzzle visualization will go here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Section -->
+        <section id="comparison" class="page-section d-none">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2 class="fw-bold">Algorithm Comparison</h2>
+                    <p class="text-secondary">Performance comparison of different search algorithms on the same puzzle
+                        instance.</p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body overflow-auto">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Algorithm</th>
+                                <th>Solution</th>
+                                <th class="text-end">Nodes Expanded</th>
+                                <th class="text-end">Moves</th>
+                                <th class="text-end">Time</th>
+                                <th class="text-end">Memory</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BFS</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr>
+                                <td>DFS</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr>
+                                <td>DLS</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr>
+                                <td>IDDLS</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr class="table-primary fw-semibold">
+                                <td>UCS (Implemented)</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr>
+                                <td>GBFS</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                            <tr>
+                                <td>A*</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                                <td class="text-end text-muted">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Algorithm Info Section -->
+        <section id="info" class="page-section d-none">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2 class="fw-bold">Algorithm Information</h2>
+                    <p class="text-secondary">Learn about Uniform Cost Search and other state-space search algorithms.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4 border-primary">
+                <div class="card-header bg-primary text-white fw-bold">
+                    Uniform Cost Search (UCS)
+                </div>
+                <div class="card-body">
+                    <p>Uniform Cost Search is an uninformed search algorithm that expands nodes based on their path cost
+                        from the initial state, rather than just their depth. It explores the state space
+                        systematically, always choosing the node with the lowest cumulative cost (denoted as
+                        <strong>g(n)</strong>).
+                    </p>
+
+                    <h5 class="fw-semibold mt-4">Key Characteristics</h5>
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-light"><strong>Data Structure:</strong> Priority
+                            Queue (Frontier / Open List) ordered by path cost.</li>
+                        <li class="list-group-item bg-transparent text-light"><strong>Completeness:</strong> Yes (if
+                            step costs are strictly positive).</li>
+                        <li class="list-group-item bg-transparent text-light"><strong>Optimality:</strong> Yes. It is
+                            guaranteed to find the lowest-cost solution path.</li>
+                        <li class="list-group-item bg-transparent text-light"><strong>Time Complexity:</strong> O(b^(1 +
+                            ⌊C*/ε⌋)), where C* is the cost of the optimal solution and ε is a lower bound on step cost.
+                        </li>
+                        <li class="list-group-item bg-transparent text-light"><strong>Space Complexity:</strong> O(b^(1
+                            + ⌊C*/ε⌋)), as it must store all nodes in the frontier and explored set.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center text-secondary py-4 mt-auto">
+        <div class="container border-top pt-3 border-secondary-subtle">
+            <small>&copy; 24BCT0107 - Harsha Nethra - Artificial Intelligence Case Study - 8-Puzzle
+                Visualizer</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App Logic -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>
