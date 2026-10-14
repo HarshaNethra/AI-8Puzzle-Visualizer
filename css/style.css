@@ -1,17 +1,26 @@
 /* style.css - Custom Styling for 8-Puzzle Visualizer */
 
-/* Overall theme adjustments for a softer dark mode */
 :root {
-    --bg-color: #161b22; /* Soft slate/github dark background */
-    --card-bg: #21262d;
-    --text-primary: #e6edf3;
+    --bg-color: #0d1117;
+    --card-bg: #161b22;
+    --card-border: #30363d;
+    --text-primary: #f0f6fc;
     --text-secondary: #8b949e;
+    --accent-blue: #388bfd;
+    --accent-indigo: #6366f1;
+    --accent-green: #238636;
+    --accent-amber: #d29922;
+    --tile-bg: #21262d;
+    --tile-border: #38424d;
+    --tile-text: #ffffff;
+    --blank-bg: #0d1117;
+    --blank-border: #30363d;
 }
 
 [data-bs-theme="dark"] body {
     background-color: var(--bg-color);
     color: var(--text-primary);
-    font-family: 'Space Grotesk', 'JetBrains Mono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -23,22 +32,24 @@
 
 [data-bs-theme="dark"] .card {
     background-color: var(--card-bg);
-    border-color: #30363d;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
 }
 
 [data-bs-theme="dark"] .card-header {
-    border-bottom-color: #30363d;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--card-border);
 }
 
 [data-bs-theme="dark"] .table {
     --bs-table-bg: transparent;
     --bs-table-color: var(--text-primary);
-    --bs-table-border-color: #30363d;
+    --bs-table-border-color: var(--card-border);
 }
 
 [data-bs-theme="dark"] .navbar {
-    border-bottom: 1px solid #30363d;
-    background-color: #0d1117 !important; /* Slightly darker navbar */
+    border-bottom: 1px solid var(--card-border);
+    background-color: #090d13 !important;
 }
 
 [data-bs-theme="dark"] .text-secondary, 
@@ -46,19 +57,195 @@
     color: var(--text-secondary) !important;
 }
 
-/* Page Section Transitions (Optional smooth fade) */
+.monospace, code, pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+/* Page Section Transitions */
 .page-section {
-    animation: fadeIn 0.3s ease-in-out;
+    animation: fadeIn 0.25s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.monospace, code, pre {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
-    background-color: rgba(255,255,255,0.05);
-    padding: 0.2rem 0.4rem;
+
+/* --- 8-Puzzle Board & Tile System --- */
+.puzzle-board-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: radial-gradient(circle at center, rgba(30, 41, 59, 0.5) 0%, rgba(13, 17, 23, 0.9) 100%);
+    border-radius: 16px;
+    border: 1px solid var(--card-border);
+}
+
+.puzzle-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    width: 300px;
+    height: 300px;
+    background-color: #0b0f15;
+    padding: 12px;
+    border-radius: 16px;
+    border: 2px solid #28303a;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.puzzle-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #262c36, #1c212a);
+    color: #f0f6fc;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px solid #363e4c;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    cursor: default;
+    user-select: none;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.puzzle-tile.tile-moved {
+    background: linear-gradient(145deg, #1f4788, #183563);
+    border-color: #58a6ff;
+    box-shadow: 0 0 14px rgba(88, 166, 255, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    transform: scale(1.03);
+}
+
+.puzzle-tile.tile-blank {
+    background: rgba(13, 17, 23, 0.5);
+    border: 2px dashed #212833;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+    color: transparent;
+}
+
+/* Mini puzzle boards for Reference & Successors */
+.puzzle-board-mini {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 4px;
+    width: 96px;
+    height: 96px;
+    background-color: #0b0f15;
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+}
+
+.puzzle-tile-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #21262d;
+    color: #e6edf3;
+    font-size: 0.8rem;
+    font-weight: 600;
     border-radius: 4px;
+    border: 1px solid #30363d;
+    user-select: none;
+}
+
+.puzzle-tile-mini.tile-blank {
+    background: transparent;
+    border: 1px dashed #212833;
+    color: transparent;
+}
+
+/* --- Interactive Input Grids --- */
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 160px;
+    margin: 0 auto;
+}
+
+.input-tile {
+    width: 100%;
+    aspect-ratio: 1;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 700;
+    background-color: #0d1117;
+    color: #58a6ff;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    transition: border-color 0.15s, background-color 0.15s;
+    padding: 0;
+}
+
+.input-tile:focus {
+    border-color: #58a6ff;
+    background-color: #161b22;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.input-tile.input-blank {
+    color: #8b949e;
+    background-color: rgba(13, 17, 23, 0.4);
+    border-style: dashed;
+}
+
+/* --- KPI Metric Cards --- */
+.metric-card {
+    background-color: #0d1117;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #58a6ff;
+    line-height: 1.2;
+}
+
+/* Successor item pills in Inspector */
+.successor-item {
+    background-color: #0d1117;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.successor-item:hover {
+    border-color: #58a6ff;
+    transform: translateY(-2px);
+}
+
+/* Step timeline */
+.step-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
 }

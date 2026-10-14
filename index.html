@@ -160,29 +160,234 @@
 
         <!-- Solver Section -->
         <section id="solver" class="page-section d-none">
-            <div class="row mb-4">
-                <div class="col">
-                    <h2 class="fw-bold">8-Puzzle Solver</h2>
-                    <p class="text-secondary">Configure your initial and goal states, then run Uniform Cost Search to
-                        visualize the solution process.</p>
+            <div class="row mb-3 align-items-center">
+                <div class="col-md-8">
+                    <h2 class="fw-bold mb-1">8-Puzzle Solver</h2>
+                    <p class="text-secondary mb-0">Configure states and run Uniform Cost Search to observe optimal
+                        state-space exploration.</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                    <select id="preset-select"
+                        class="form-select form-select-sm bg-dark text-light border-secondary d-inline-block w-auto">
+                        <option value="">Load Preset Puzzle...</option>
+                        <option value="easy-1">Easy (1 move)</option>
+                        <option value="easy-2">Easy (2 moves)</option>
+                        <option value="medium-6">Medium (6 moves)</option>
+                        <option value="hard-14">Complex (14 moves)</option>
+                        <option value="unsolvable">Unsolvable Test Case</option>
+                        <option value="solved">Already Solved (0 moves)</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Placeholder for Solver UI -->
             <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-dark-subtle fw-semibold">Configuration</div>
+                <!-- Left Column: Configuration & Playback Controls -->
+                <div class="col-lg-4">
+                    <!-- Configuration Card -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Puzzle Configuration</span>
+                            <button id="btn-random" class="btn btn-sm btn-outline-info"
+                                title="Generate a random solvable configuration">
+                                Generate Random
+                            </button>
+                        </div>
                         <div class="card-body">
-                            <p class="text-muted">Puzzle configuration controls will go here.</p>
+                            <!-- Validation Status Alert -->
+                            <div id="validation-alert" class="alert alert-success py-2 px-3 small mb-3">
+                                Valid and mathematically solvable.
+                            </div>
+
+                            <div class="row g-3 text-center">
+                                <div class="col-6">
+                                    <label class="form-label small text-secondary fw-bold text-uppercase mb-2">Initial
+                                        State</label>
+                                    <div id="init-grid" class="input-grid"></div>
+                                    <div class="d-flex align-items-center justify-content-center mt-2"
+                                        style="height: 31px;">
+                                        <span class="small text-muted" style="font-size: 0.75rem;">(0 or blank for
+                                            empty)</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-secondary fw-bold text-uppercase mb-2">Goal
+                                        State</label>
+                                    <div id="goal-grid" class="input-grid"></div>
+                                    <button id="btn-reset-goal" type="button"
+                                        class="btn btn-outline-secondary btn-sm mt-2 w-100"
+                                        style="font-size: 0.75rem; height: 31px;">
+                                        Reset to Standard Goal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Playback Controls Card -->
+                    <div class="card shadow-sm">
+                        <div class="card-header fw-semibold">
+                            Search & Playback Controls
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2 mb-3">
+                                <button id="btn-run" class="btn btn-success fw-bold py-2">
+                                    ▶ Run Search
+                                </button>
+                            </div>
+
+                            <div class="btn-group w-100 mb-3" role="group">
+                                <button id="btn-pause" class="btn btn-outline-secondary" disabled
+                                    title="Pause Animation">
+                                    ⏸ Pause
+                                </button>
+                                <button id="btn-step-prev" class="btn btn-outline-secondary" disabled
+                                    title="Previous Step">
+                                    ⏮ Back
+                                </button>
+                                <button id="btn-step-next" class="btn btn-outline-secondary" disabled title="Next Step">
+                                    ⏭ Next
+                                </button>
+                                <button id="btn-reset" class="btn btn-outline-danger" title="Reset Solver">
+                                    Reset
+                                </button>
+                            </div>
+
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="speed-slider" class="form-label small text-secondary mb-0">Playback Step
+                                        Delay:</label>
+                                    <span id="speed-value"
+                                        class="badge bg-secondary-subtle font-monospace text-light">500 ms</span>
+                                </div>
+                                <input type="range" class="form-range" id="speed-slider" min="50" max="1200" step="50"
+                                    value="500">
+                                <div class="d-flex justify-content-between small text-muted" style="font-size: 0.7rem;">
+                                    <span>Fast (50ms)</span>
+                                    <span>Slow (1.2s)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-8">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-dark-subtle fw-semibold">Visualization</div>
+
+                <!-- Right Column: Board Stage, Metrics & Trace Inspector -->
+                <div class="col-lg-8">
+                    <!-- Visualization Stage -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                            <span>Puzzle State Visualization</span>
+                            <span id="step-counter"
+                                class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                                Initial State
+                            </span>
+                        </div>
                         <div class="card-body">
-                            <p class="text-muted">Interactive puzzle visualization will go here.</p>
+                            <div class="row g-3 align-items-stretch">
+                                <!-- Main Board Display -->
+                                <div class="col-md-6 d-flex flex-column align-items-center justify-content-center">
+                                    <div
+                                        class="puzzle-board-container w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                                        <div id="main-board" class="puzzle-board"></div>
+                                        <div class="d-flex gap-2 mt-3 flex-wrap justify-content-center">
+                                            <span class="badge bg-dark border border-secondary text-secondary">
+                                                Action: <strong id="badge-action" class="text-light">INITIAL</strong>
+                                            </span>
+                                            <span class="badge bg-dark border border-secondary text-secondary">
+                                                Cost g(n): <strong id="badge-cost" class="text-info">0</strong>
+                                            </span>
+                                            <span class="badge bg-dark border border-secondary text-secondary">
+                                                Depth: <strong id="badge-depth" class="text-light">0</strong>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Successor States & Frontier Queue Side Panel -->
+                                <div class="col-md-6">
+                                    <div class="border rounded-3 p-3 bg-dark-subtle h-100 d-flex flex-column"
+                                        style="min-height: 380px;">
+                                        <ul class="nav nav-pills nav-fill mb-2" id="inspectorTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active py-1 px-2 small fw-semibold"
+                                                    id="successors-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#tab-successors" type="button" role="tab">
+                                                    Successor States
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link py-1 px-2 small fw-semibold text-secondary"
+                                                    id="frontier-tab" data-bs-toggle="tab"
+                                                    data-bs-target="#tab-frontier" type="button" role="tab">
+                                                    Frontier Queue
+                                                </button>
+                                            </li>
+                                        </ul>
+                                        <div class="tab-content flex-grow-1 overflow-auto" id="inspectorTabContent"
+                                            style="max-height: 330px;">
+                                            <div class="tab-pane fade show active" id="tab-successors" role="tabpanel">
+                                                <div id="successors-container" class="py-1">
+                                                    <div class="text-secondary small py-4 text-center">Click "Run
+                                                        Search" or step forward to view generated successor states.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade" id="tab-frontier" role="tabpanel">
+                                                <div id="frontier-container" class="py-1">
+                                                    <div class="text-secondary small py-4 text-center">Frontier items
+                                                        will display during search execution.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI Statistics Dashboard -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header fw-semibold">
+                            Search Performance Metrics
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Generated</span>
+                                        <span id="metric-generated" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Expanded</span>
+                                        <span id="metric-expanded" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Path Cost</span>
+                                        <span id="metric-cost" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Max Depth</span>
+                                        <span id="metric-depth" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Time</span>
+                                        <span id="metric-time" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                                <div class="col-4 col-sm-2">
+                                    <div class="metric-card">
+                                        <span class="metric-label">Memory</span>
+                                        <span id="metric-memory" class="metric-value">—</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -193,81 +398,185 @@
         <section id="comparison" class="page-section d-none">
             <div class="row mb-4">
                 <div class="col">
-                    <h2 class="fw-bold">Algorithm Comparison</h2>
-                    <p class="text-secondary">Performance comparison of different search algorithms on the same puzzle
-                        instance.</p>
+                    <h2 class="fw-bold mb-1">Algorithm Comparison</h2>
+                    <p class="text-secondary">Empirical performance on the active puzzle instance alongside a theoretical comparative matrix.</p>
                 </div>
             </div>
 
+            <!-- Empirical Benchmark Results -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Empirical Benchmark on Active Puzzle</span>
+                    <button class="btn btn-sm btn-outline-primary" onclick="navigate('solver')">Go to Solver</button>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-secondary py-2 px-3 small mb-3">
+                        <strong>Academic Scope Note:</strong> Per assignment requirements, <strong>Uniform Cost Search (UCS)</strong> is the student's assigned implemented algorithm. Running a search in the Solver dynamically benchmarks and records live metrics below. Other algorithms display theoretical characteristics in the matrix below.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead>
+                                <tr class="text-secondary border-bottom border-secondary-subtle">
+                                    <th>Algorithm</th>
+                                    <th>Implementation Status</th>
+                                    <th>Solution Found</th>
+                                    <th class="text-end">Nodes Expanded</th>
+                                    <th class="text-end">Solution Moves</th>
+                                    <th class="text-end">Execution Time</th>
+                                    <th class="text-end">Approx. Memory</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="row-ucs" class="table-primary fw-semibold">
+                                    <td>Uniform Cost Search (UCS)</td>
+                                    <td><span class="badge bg-success">Assigned & Implemented</span></td>
+                                    <td class="text-muted">—</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Breadth-First Search (BFS)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">Yes</td>
+                                    <td class="text-end text-muted">~O(b<sup>d</sup>)</td>
+                                    <td class="text-end text-muted">Optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">High</td>
+                                </tr>
+                                <tr>
+                                    <td>Depth-First Search (DFS)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">No (May loop)</td>
+                                    <td class="text-end text-muted">Unbounded</td>
+                                    <td class="text-end text-muted">Non-optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">Low ~O(bm)</td>
+                                </tr>
+                                <tr>
+                                    <td>Depth-Limited Search (DLS)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">If d ≤ limit</td>
+                                    <td class="text-end text-muted">Bounded ~O(b<sup>l</sup>)</td>
+                                    <td class="text-end text-muted">Non-optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">Low ~O(bl)</td>
+                                </tr>
+                                <tr>
+                                    <td>Iterative Deepening (IDDLS)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">Yes</td>
+                                    <td class="text-end text-muted">~O(b<sup>d</sup>)</td>
+                                    <td class="text-end text-muted">Optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">Low ~O(bd)</td>
+                                </tr>
+                                <tr>
+                                    <td>Greedy Best-First (GBFS)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">Heuristic-dependent</td>
+                                    <td class="text-end text-muted">Variable</td>
+                                    <td class="text-end text-muted">Non-optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">Moderate</td>
+                                </tr>
+                                <tr>
+                                    <td>A* Search (A*)</td>
+                                    <td><span class="badge bg-secondary">Theoretical Baseline</span></td>
+                                    <td class="text-muted">Yes</td>
+                                    <td class="text-end text-muted">Heuristic-pruned</td>
+                                    <td class="text-end text-muted">Optimal</td>
+                                    <td class="text-end text-muted">—</td>
+                                    <td class="text-end text-muted">High</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comprehensive Theoretical Comparison Matrix -->
             <div class="card shadow-sm">
+                <div class="card-header fw-semibold">
+                    Theoretical Comparison Matrix of State-Space Search Algorithms
+                </div>
                 <div class="card-body overflow-auto">
-                    <table class="table table-hover table-striped mb-0">
+                    <table class="table table-hover table-striped align-middle mb-0 font-monospace small">
                         <thead>
-                            <tr>
+                            <tr class="text-secondary border-bottom border-secondary-subtle">
                                 <th>Algorithm</th>
-                                <th>Solution</th>
-                                <th class="text-end">Nodes Expanded</th>
-                                <th class="text-end">Moves</th>
-                                <th class="text-end">Time</th>
-                                <th class="text-end">Memory</th>
+                                <th>Type</th>
+                                <th>Frontier Structure</th>
+                                <th>Complete?</th>
+                                <th>Optimal?</th>
+                                <th>Time Complexity</th>
+                                <th>Space Complexity</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>BFS</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                            </tr>
-                            <tr>
-                                <td>DFS</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                            </tr>
-                            <tr>
-                                <td>DLS</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                            </tr>
-                            <tr>
-                                <td>IDDLS</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                            </tr>
                             <tr class="table-primary fw-semibold">
-                                <td>UCS (Implemented)</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
+                                <td>Uniform Cost Search (UCS)</td>
+                                <td>Uninformed</td>
+                                <td>Priority Queue (by cost g)</td>
+                                <td><span class="text-success">Yes</span> (if cost ≥ ε > 0)</td>
+                                <td><span class="text-success">Yes</span></td>
+                                <td>O(b<sup>1 + ⌊C*/ε⌋</sup>)</td>
+                                <td>O(b<sup>1 + ⌊C*/ε⌋</sup>)</td>
                             </tr>
                             <tr>
-                                <td>GBFS</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
+                                <td>Breadth-First Search (BFS)</td>
+                                <td>Uninformed</td>
+                                <td>FIFO Queue</td>
+                                <td><span class="text-success">Yes</span></td>
+                                <td><span class="text-success">Yes</span> (unit cost)</td>
+                                <td>O(b<sup>d</sup>)</td>
+                                <td>O(b<sup>d</sup>)</td>
                             </tr>
                             <tr>
-                                <td>A*</td>
-                                <td class="text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
-                                <td class="text-end text-muted">—</td>
+                                <td>Depth-First Search (DFS)</td>
+                                <td>Uninformed</td>
+                                <td>LIFO Stack</td>
+                                <td><span class="text-danger">No</span> (infinite paths)</td>
+                                <td><span class="text-danger">No</span></td>
+                                <td>O(b<sup>m</sup>)</td>
+                                <td>O(b · m)</td>
+                            </tr>
+                            <tr>
+                                <td>Depth-Limited Search (DLS)</td>
+                                <td>Uninformed</td>
+                                <td>LIFO Stack with cutoff</td>
+                                <td><span class="text-warning">No</span> (if d > l)</td>
+                                <td><span class="text-danger">No</span></td>
+                                <td>O(b<sup>l</sup>)</td>
+                                <td>O(b · l)</td>
+                            </tr>
+                            <tr>
+                                <td>Iterative Deepening (IDDLS)</td>
+                                <td>Uninformed</td>
+                                <td>LIFO Stack (iterative limit)</td>
+                                <td><span class="text-success">Yes</span></td>
+                                <td><span class="text-success">Yes</span> (unit cost)</td>
+                                <td>O(b<sup>d</sup>)</td>
+                                <td>O(b · d)</td>
+                            </tr>
+                            <tr>
+                                <td>Greedy Best-First (GBFS)</td>
+                                <td>Informed</td>
+                                <td>Priority Queue (by h(n))</td>
+                                <td><span class="text-danger">No</span> (can get stuck)</td>
+                                <td><span class="text-danger">No</span></td>
+                                <td>O(b<sup>m</sup>) worst-case</td>
+                                <td>O(b<sup>m</sup>)</td>
+                            </tr>
+                            <tr>
+                                <td>A* Search (A*)</td>
+                                <td>Informed</td>
+                                <td>Priority Queue (f = g + h)</td>
+                                <td><span class="text-success">Yes</span></td>
+                                <td><span class="text-success">Yes</span> (admissible h)</td>
+                                <td>O(b<sup>d</sup>) worst-case</td>
+                                <td>O(b<sup>d</sup>)</td>
                             </tr>
                         </tbody>
                     </table>
@@ -279,37 +588,186 @@
         <section id="info" class="page-section d-none">
             <div class="row mb-4">
                 <div class="col">
-                    <h2 class="fw-bold">Algorithm Information</h2>
-                    <p class="text-secondary">Learn about Uniform Cost Search and other state-space search algorithms.
-                    </p>
+                    <h2 class="fw-bold mb-1">Algorithm Information & Theory</h2>
+                    <p class="text-secondary">Detailed educational overview of search algorithms, focusing on Uniform Cost Search mechanics on the 8-puzzle.</p>
                 </div>
             </div>
 
+            <!-- Deep Dive on Assigned Algorithm: Uniform Cost Search -->
             <div class="card shadow-sm mb-4 border-primary">
-                <div class="card-header bg-primary text-white fw-bold">
-                    Uniform Cost Search (UCS)
+                <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span>Uniform Cost Search (UCS) — Comprehensive Deep Dive</span>
+                    <span class="badge bg-light text-primary">Assigned Implementation</span>
                 </div>
                 <div class="card-body">
-                    <p>Uniform Cost Search is an uninformed search algorithm that expands nodes based on their path cost
-                        from the initial state, rather than just their depth. It explores the state space
-                        systematically, always choosing the node with the lowest cumulative cost (denoted as
-                        <strong>g(n)</strong>).
+                    <p class="fs-6">
+                        <strong>Uniform Cost Search (UCS)</strong> is an uninformed graph search algorithm that explores the state space systematically in order of increasing cumulative path cost from the start state, denoted as <strong>g(n)</strong>. While Breadth-First Search (BFS) expands nodes level by level (assuming equal cost for all transitions), UCS generalizes this to arbitrary non-negative step costs, guaranteeing that when a goal node is selected for expansion, the optimal lowest-cost path has been found.
                     </p>
 
-                    <h5 class="fw-semibold mt-4">Key Characteristics</h5>
-                    <ul class="list-group list-group-flush bg-transparent">
-                        <li class="list-group-item bg-transparent text-light"><strong>Data Structure:</strong> Priority
-                            Queue (Frontier / Open List) ordered by path cost.</li>
-                        <li class="list-group-item bg-transparent text-light"><strong>Completeness:</strong> Yes (if
-                            step costs are strictly positive).</li>
-                        <li class="list-group-item bg-transparent text-light"><strong>Optimality:</strong> Yes. It is
-                            guaranteed to find the lowest-cost solution path.</li>
-                        <li class="list-group-item bg-transparent text-light"><strong>Time Complexity:</strong> O(b^(1 +
-                            ⌊C*/ε⌋)), where C* is the cost of the optimal solution and ε is a lower bound on step cost.
-                        </li>
-                        <li class="list-group-item bg-transparent text-light"><strong>Space Complexity:</strong> O(b^(1
-                            + ⌊C*/ε⌋)), as it must store all nodes in the frontier and explored set.</li>
-                    </ul>
+                    <div class="row g-3 my-2">
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 border rounded-3 bg-dark-subtle h-100">
+                                <h6 class="fw-bold text-info mb-1">1. State-Space Representation</h6>
+                                <p class="small text-secondary mb-0">The 8-puzzle is modeled as a graph where each node is a permutation of 9 tiles (0–8). Moves consist of sliding adjacent tiles into the empty space (0).</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 border rounded-3 bg-dark-subtle h-100">
+                                <h6 class="fw-bold text-info mb-1">2. Priority Queue Frontier</h6>
+                                <p class="small text-secondary mb-0">The frontier (Open List) is maintained as a Min-Heap keyed on <code>g(n)</code>. Ties are broken in FIFO order to preserve deterministic behavior.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 border rounded-3 bg-dark-subtle h-100">
+                                <h6 class="fw-bold text-info mb-1">3. Goal Testing on Expansion</h6>
+                                <p class="small text-secondary mb-0"><strong>Crucial rule:</strong> UCS tests for the goal upon <em>selection/expansion</em> from the queue, not upon node generation. This guarantees path optimality.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="p-3 border rounded-3 bg-dark-subtle h-100">
+                                <h6 class="fw-bold text-info mb-1">4. Explored Set & Duplicate Elimination</h6>
+                                <p class="small text-secondary mb-0">A Closed List (Map) tracks visited states. If a newly generated successor matches an explored state with lower or equal cost, it is discarded.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-semibold mt-4 mb-2">Algorithm Execution Walkthrough</h5>
+                    <ol class="small text-secondary mb-3">
+                        <li>Initialize the Frontier with the root node: <code>state = initial</code>, <code>parent = null</code>, <code>cost g(root) = 0</code>.</li>
+                        <li>If the Frontier is empty, terminate with <em>failure</em> (no solution exists).</li>
+                        <li>Extract the node <code>n</code> with minimum <code>g(n)</code> from the Frontier.</li>
+                        <li>If <code>state(n) == goal</code>, reconstruct the optimal path using parent pointers and return success.</li>
+                        <li>Add <code>state(n)</code> to the Explored set.</li>
+                        <li>For each valid move from <code>state(n)</code>, generate successor child node with <code>g(child) = g(n) + stepCost</code>.</li>
+                        <li>If the child is neither in Explored nor Frontier with lower cost, insert it into the Frontier.</li>
+                        <li>Repeat from step 2.</li>
+                    </ol>
+
+                    <h5 class="fw-semibold mt-3 mb-2">UCS Complexity & Performance on the 8-Puzzle</h5>
+                    <div class="row g-2 font-monospace small">
+                        <div class="col-sm-6">
+                            <div class="p-2 border rounded-3 bg-dark text-secondary">
+                                <strong class="text-light">Time Complexity:</strong> O(b<sup>1 + ⌊C*/ε⌋</sup>), where b ≈ 2.67 (effective branching factor), C* is optimal cost, and ε is minimum step cost.
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 border rounded-3 bg-dark text-secondary">
+                                <strong class="text-light">Space Complexity:</strong> O(b<sup>1 + ⌊C*/ε⌋</sup>), storing all nodes in both the frontier heap and explored map.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other State-Space Search Algorithms Overview -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">
+                    Overview of Other State-Space Search Algorithms
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="algoAccordion">
+                        <!-- BFS -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingBFS">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBFS">
+                                    Breadth-First Search (BFS)
+                                </button>
+                            </h2>
+                            <div id="collapseBFS" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Expands nodes in strict shallowest-first order using a First-In-First-Out (FIFO) queue.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Guaranteed to find the shallowest goal state; complete on finite graphs; optimal when all action costs are identical.</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> High exponential memory consumption O(b<sup>d</sup>); stores the entire frontier in RAM, making it impractical for deep 8-puzzle configurations.</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>d</sup>) | Space: O(b<sup>d</sup>) | Complete: Yes | Optimal: Yes (unit-cost).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DFS -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingDFS">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDFS">
+                                    Depth-First Search (DFS)
+                                </button>
+                            </h2>
+                            <div id="collapseDFS" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Expands the deepest node in the current frontier using a Last-In-First-Out (LIFO) stack.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Extremely modest linear memory consumption O(b·m), requiring only storing the current active search path.</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> Incomplete in infinite or cyclic state spaces; can get trapped in repetitive cycles; not optimal (often finds needlessly long solution paths).</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>m</sup>) | Space: O(b·m) | Complete: No | Optimal: No.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DLS -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingDLS">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDLS">
+                                    Depth-Limited Search (DLS)
+                                </button>
+                            </h2>
+                            <div id="collapseDLS" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Executes Depth-First Search with a predetermined depth cutoff limit <code>l</code>. Nodes at depth <code>l</code> are treated as having no successors.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Solves the infinite path issue of pure DFS while maintaining low linear memory requirements O(b·l).</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> Incomplete if the shallowest goal is deeper than <code>l</code>; not optimal if <code>l > d</code>.</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>l</sup>) | Space: O(b·l) | Complete: No (if d > l) | Optimal: No.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IDDLS -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingIDDLS">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIDDLS">
+                                    Iterative Deepening Search (IDDLS / IDDFS)
+                                </button>
+                            </h2>
+                            <div id="collapseIDDLS" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Repeatedly runs Depth-Limited Search, incrementing the depth bound <code>l = 0, 1, 2, ...</code> until a goal is found.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Combines the optimality and completeness of BFS with the linear space efficiency of DFS.</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> Repeated generation of upper-level tree nodes (though overhead is small because the bottom level dominates in high branching factors).</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>d</sup>) | Space: O(b·d) | Complete: Yes | Optimal: Yes (unit-cost).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GBFS -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingGBFS">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGBFS">
+                                    Greedy Best-First Search (GBFS)
+                                </button>
+                            </h2>
+                            <div id="collapseGBFS" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Uses a heuristic function <code>h(n)</code> (e.g., Manhattan distance or misplaced tiles) to expand the node that appears closest to the goal.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Highly efficient and fast when the heuristic is accurate, rushing toward the goal with fewer expansions.</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> Neither complete nor optimal; prone to wandering down false trails if misleading local heuristics appear attractive.</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>m</sup>) worst-case | Space: O(b<sup>m</sup>) | Complete: No | Optimal: No.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- A* -->
+                        <div class="accordion-item bg-dark-subtle border-secondary">
+                            <h2 class="accordion-header" id="headingAStar">
+                                <button class="accordion-button collapsed bg-dark text-light fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAStar">
+                                    A* Search (A*)
+                                </button>
+                            </h2>
+                            <div id="collapseAStar" class="accordion-collapse collapse" data-bs-parent="#algoAccordion">
+                                <div class="accordion-body small text-secondary">
+                                    <p class="text-light mb-1"><strong>Working Principle:</strong> Evaluates nodes by combining backward path cost <code>g(n)</code> with forward estimated cost <code>h(n)</code>: <code>f(n) = g(n) + h(n)</code>.</p>
+                                    <p class="mb-1"><strong>Advantages:</strong> Both complete and optimal when using an admissible heuristic (e.g., Manhattan distance for 8-puzzle); optimally efficient among all heuristic search algorithms.</p>
+                                    <p class="mb-1"><strong>Limitations:</strong> Space-bound: retains all generated nodes in memory, which can exhaust RAM on complex puzzle instances without memory-bounded variants (e.g. SMA* or IDA*).</p>
+                                    <p class="mb-0"><strong>Complexity:</strong> Time: O(b<sup>d</sup>) worst-case | Space: O(b<sup>d</sup>) | Complete: Yes | Optimal: Yes.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -331,6 +789,10 @@
     <script src="js/priorityQueue.js"></script>
     <!-- Uniform Cost Search Engine -->
     <script src="js/ucs.js"></script>
+    <!-- Visualization Rendering Engine -->
+    <script src="js/visualizer.js"></script>
+    <!-- Search & UI Controller -->
+    <script src="js/controller.js"></script>
     <!-- App Logic -->
     <script src="js/app.js"></script>
 </body>

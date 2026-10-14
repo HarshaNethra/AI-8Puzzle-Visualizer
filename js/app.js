@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hash && ['home', 'solver', 'comparison', 'info'].includes(hash)) {
         navigate(hash);
     }
+
+    // Initialize Solver Controller
+    if (typeof AppController !== 'undefined' && AppController.init) {
+        AppController.init();
+    }
 });
 
 /**

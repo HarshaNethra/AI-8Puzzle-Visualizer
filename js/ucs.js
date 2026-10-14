@@ -301,9 +301,11 @@
             addTraceStep({
                 type: 'EXPAND_NODE',
                 nodeId: currentNode.id,
+                state: currentNode.state.slice(),
                 successorsCount: generatedThisStep.length,
                 successors: generatedThisStep,
                 frontierSize: frontier.size(),
+                frontierSnapshot: frontier.getSnapshot().slice(0, 15),
                 exploredSize: explored.size,
                 nodesGenerated,
                 nodesExpanded
