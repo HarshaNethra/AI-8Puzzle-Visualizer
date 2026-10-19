@@ -566,10 +566,6 @@ AI-8Puzzle-Visualizer/
 
 │
 
-├── assets/
-
-│
-
 ├── images/
 
 │

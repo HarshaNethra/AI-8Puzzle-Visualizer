@@ -15,12 +15,22 @@
     --tile-text: #ffffff;
     --blank-bg: #0d1117;
     --blank-border: #30363d;
+    --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body, button, input, select, textarea, .btn, .nav-link, .navbar-brand, .form-select, .form-control, .card, .card-header, .accordion-button, .alert, h1, h2, h3, h4, h5, h6, p, span:not(.font-monospace) {
+    font-family: var(--font-primary);
+}
+
+.monospace, code, pre, .font-monospace, .metric-value, .input-tile, .step-badge, .step-counter-badge, .table, .badge.font-monospace {
+    font-family: var(--font-mono) !important;
 }
 
 [data-bs-theme="dark"] body {
     background-color: var(--bg-color);
     color: var(--text-primary);
-    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -71,8 +81,8 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* --- 8-Puzzle Board & Tile System --- */
@@ -83,25 +93,35 @@
     justify-content: center;
     padding: 1.5rem;
     background: radial-gradient(circle at center, rgba(30, 41, 59, 0.5) 0%, rgba(13, 17, 23, 0.9) 100%);
-    border-radius: 16px;
-    border: 1px solid var(--card-border);
+    border-radius: 0;
+    border: none;
 }
 
 .puzzle-board {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 10px;
+    position: relative;
     width: 300px;
     height: 300px;
     background-color: #0b0f15;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 4px;
     border: 2px solid #28303a;
     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    overflow: hidden;
+    --tile-size: 84px;
+    --tile-step: 94px;
+}
+
+.puzzle-board.no-transition .puzzle-tile {
+    transition: none !important;
 }
 
 .puzzle-tile {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: var(--tile-size, 84px);
+    height: var(--tile-size, 84px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -110,19 +130,29 @@
     font-family: 'Space Grotesk', sans-serif;
     font-size: 1.85rem;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 4px;
     border: 1px solid #363e4c;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    cursor: default;
+    cursor: pointer;
     user-select: none;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform var(--slide-duration, 0.28s) cubic-bezier(0.25, 1, 0.5, 1), 
+                background 0.2s ease, 
+                border-color 0.2s ease, 
+                box-shadow 0.2s ease;
+    will-change: transform;
+    z-index: 2;
+}
+
+.puzzle-tile:not(.tile-blank):hover {
+    border-color: #58a6ff;
+    filter: brightness(1.08);
 }
 
 .puzzle-tile.tile-moved {
     background: linear-gradient(145deg, #1f4788, #183563);
     border-color: #58a6ff;
-    box-shadow: 0 0 14px rgba(88, 166, 255, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-    transform: scale(1.03);
+    box-shadow: 0 0 16px rgba(88, 166, 255, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    z-index: 3;
 }
 
 .puzzle-tile.tile-blank {
@@ -130,6 +160,9 @@
     border: 2px dashed #212833;
     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
     color: transparent;
+    cursor: default;
+    z-index: 1;
+    pointer-events: none;
 }
 
 /* Mini puzzle boards for Reference & Successors */
@@ -172,6 +205,16 @@
     gap: 6px;
     width: 160px;
     margin: 0 auto;
+}
+
+.input-grid.input-grid-compact {
+    gap: 4px;
+    width: 130px;
+}
+
+.input-grid.input-grid-compact .input-tile {
+    font-size: 1.05rem;
+    border-radius: 6px;
 }
 
 .input-tile {
@@ -249,3 +292,599 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
 }
+
+/* Step Counter Badge */
+.step-counter-badge {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #e6edf3;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.28rem 0.65rem;
+    letter-spacing: 0.02em;
+}
+
+/* Solution Path Showcase Cards */
+.solution-step-item {
+    background-color: #0d1117;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+}
+
+.solution-step-item:hover {
+    border-color: #58a6ff;
+    transform: translateY(-2px);
+    background-color: rgba(88, 166, 255, 0.05);
+}
+
+.solution-step-item.active-step {
+    border-color: #58a6ff !important;
+    background-color: rgba(88, 166, 255, 0.12) !important;
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.35);
+}
+
+/* --- Accordion Custom Styling & Blue Highlight Removal --- */
+.accordion-button {
+    box-shadow: none !important;
+}
+
+.accordion-button:focus,
+.accordion-button:active,
+.accordion-button:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+    border-color: var(--card-border) !important;
+}
+
+.accordion-button:not(.collapsed) {
+    box-shadow: none !important;
+    outline: none !important;
+    border-color: var(--card-border) !important;
+    color: #58a6ff !important;
+    background-color: rgba(56, 139, 253, 0.08) !important;
+}
+
+.accordion-item {
+    border-color: var(--card-border) !important;
+    background-color: #161b22 !important;
+}
+
+.accordion-body {
+    background-color: #0d1117 !important;
+}
+
+/* --- Preset Puzzle Dropdown Styling --- */
+#preset-select,
+.preset-dropdown {
+    background-color: #161b22 !important;
+    color: #f0f6fc !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 6px !important;
+    padding: 0.25rem 1.6rem 0.25rem 0.65rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+    cursor: pointer !important;
+    transition: border-color 0.18s ease-in-out, box-shadow 0.18s ease-in-out, background-color 0.18s ease-in-out !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238b949e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.5rem center !important;
+    background-size: 11px 9px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+    max-width: 135px !important;
+}
+
+/* --- Main View Tabs (White Text for both Default and Selected) --- */
+#mainViewTabs .nav-link {
+    color: #ffffff !important;
+    background-color: transparent;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#mainViewTabs .nav-link:hover:not(.active) {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+#mainViewTabs .nav-link.active {
+    color: #ffffff !important;
+    background-color: #0d6efd !important;
+}
+
+#preset-select:hover,
+.preset-dropdown:hover {
+    border-color: #58a6ff !important;
+    background-color: #1c2128 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2358a6ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+#preset-select:focus,
+.preset-dropdown:focus {
+    border-color: #58a6ff !important;
+    background-color: #1c2128 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2358a6ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+#preset-select option {
+    background-color: #161b22 !important;
+    color: #f0f6fc !important;
+    padding: 8px 12px !important;
+}
+
+#preset-select option:hover,
+#preset-select option:checked {
+    background-color: #1f4788 !important;
+    color: #ffffff !important;
+}
+
+/* --- State-Space Search Tree Visualization (D3.js SVG) --- */
+.tree-viewport {
+    height: 500px;
+    background-color: #0b0f15;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+}
+
+.tree-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.tree-svg {
+    height: 100%;
+    width: 100%;
+    cursor: grab;
+}
+
+.tree-svg:active {
+    cursor: grabbing;
+}
+
+/* Tree Links / Edges */
+.tree-link {
+    fill: none;
+    stroke: #388bfd !important;
+    stroke-width: 1.8px;
+    opacity: 0.75;
+    transition: stroke 0.25s ease, stroke-width 0.25s ease;
+}
+
+.tree-link.link-solution {
+    stroke: #2ea043 !important;
+    stroke-width: 3.5px !important;
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 8px rgba(46, 160, 67, 0.8));
+}
+
+/* Tree Nodes */
+.tree-node {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.tree-node-bg {
+    fill: #161b22;
+    stroke: #30363d;
+    stroke-width: 1.5px;
+    rx: 8px;
+    ry: 8px;
+    transition: all 0.2s ease;
+}
+
+.tree-node:hover .tree-node-bg {
+    stroke: #58a6ff;
+    stroke-width: 2px;
+    filter: drop-shadow(0 4px 12px rgba(88, 166, 255, 0.4));
+}
+
+/* Status: Frontier (Open List - Amber / Orange) */
+.tree-node.status-frontier .tree-node-bg {
+    stroke: #d29922 !important;
+    stroke-width: 1.8px !important;
+    fill: #1b170e !important;
+    filter: drop-shadow(0 0 6px rgba(210, 153, 34, 0.35)) !important;
+}
+
+.tree-node.status-frontier .tree-node-action {
+    fill: #d29922 !important;
+}
+
+/* Status: Explored (Closed List - Cool Blue) */
+.tree-node.status-explored .tree-node-bg {
+    stroke: #388bfd !important;
+    stroke-width: 1.8px !important;
+    fill: #101826 !important;
+    filter: drop-shadow(0 0 8px rgba(56, 139, 253, 0.35)) !important;
+}
+
+.tree-node.status-explored .tree-node-action {
+    fill: #58a6ff !important;
+}
+
+/* Status: Solution Path Node (Explored Blue - only Goal is Green) */
+.tree-node.status-solution .tree-node-bg {
+    stroke: #388bfd !important;
+    stroke-width: 2.2px !important;
+    fill: #101826 !important;
+    filter: drop-shadow(0 0 8px rgba(56, 139, 253, 0.45)) !important;
+}
+
+.tree-node.status-solution .tree-node-action {
+    fill: #58a6ff !important;
+    font-weight: 700 !important;
+}
+
+/* Status: Current / Active Expanding Node (Vibrant Cyan) */
+.tree-node-glow-ring {
+    display: none;
+    fill: none;
+    stroke: transparent;
+    pointer-events: none;
+}
+
+.tree-node.status-current .tree-node-glow-ring {
+    display: block;
+    stroke: #00f2fe;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 16px rgba(0, 242, 254, 0.95)) drop-shadow(0 0 28px rgba(0, 180, 255, 0.6));
+    animation: pulse-current-halo 1.7s ease-in-out infinite;
+}
+
+.tree-node.status-current .tree-node-bg {
+    stroke: #00d2ff !important;
+    stroke-width: 3px !important;
+    fill: #0c1c2e !important;
+    filter: drop-shadow(0 0 14px rgba(0, 210, 255, 0.85)) !important;
+}
+
+.tree-node.status-current .tree-node-action {
+    fill: #38bdf8 !important;
+    font-weight: 800 !important;
+}
+
+/* Status: Goal Node (Vibrant Emerald Glow - Always Green) */
+.tree-node.status-goal .tree-node-glow-ring {
+    display: block;
+    stroke: #2ea043;
+    stroke-width: 3.5px;
+    filter: drop-shadow(0 0 18px rgba(46, 160, 67, 1)) drop-shadow(0 0 30px rgba(46, 160, 67, 0.65));
+    animation: pulse-goal-halo 1.7s ease-in-out infinite;
+}
+
+.tree-node.status-goal .tree-node-bg {
+    stroke: #2ea043 !important;
+    stroke-width: 3.5px !important;
+    fill: #0c2317 !important;
+    filter: drop-shadow(0 0 18px rgba(46, 160, 67, 0.9)) !important;
+}
+
+.tree-node.status-goal .tree-node-action {
+    fill: #2ea043 !important;
+    font-weight: 800 !important;
+}
+
+/* Selected Node (Inspection) */
+.tree-node.node-selected .tree-node-bg {
+    stroke: #a371f7 !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 14px rgba(163, 113, 247, 0.8)) !important;
+}
+
+@keyframes pulse-current-halo {
+    0%, 100% {
+        stroke: #38bdf8;
+        stroke-width: 2.5px;
+        opacity: 0.85;
+    }
+    50% {
+        stroke: #00f2fe;
+        stroke-width: 4px;
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-goal-halo {
+    0%, 100% {
+        stroke: #238636;
+        stroke-width: 2.5px;
+        opacity: 0.85;
+    }
+    50% {
+        stroke: #2ea043;
+        stroke-width: 4.5px;
+        opacity: 1;
+    }
+}
+
+/* Tree Mini Puzzle Board SVG Elements */
+.tree-tile-rect {
+    fill: #21262d;
+    stroke: #30363d;
+    stroke-width: 0.8px;
+    rx: 3px;
+    ry: 3px;
+}
+
+.tree-tile-rect.tile-blank {
+    fill: #0d1117;
+    stroke: #212833;
+    stroke-dasharray: 2 2;
+}
+
+.tree-tile-text {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    fill: #f0f6fc;
+    text-anchor: middle;
+    dominant-baseline: central;
+    user-select: none;
+    pointer-events: none;
+}
+
+.tree-node-action {
+    font-size: 10px;
+    font-family: var(--font-primary);
+    font-weight: 700;
+    fill: #58a6ff;
+    letter-spacing: 0.04em;
+    user-select: none;
+    pointer-events: none;
+}
+
+.tree-node-meta {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    fill: #8b949e;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Tree Legend Swatches */
+.legend-swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1.5px solid transparent;
+}
+
+.swatch-current {
+    background-color: #13243a;
+    border-color: #58a6ff;
+}
+
+.swatch-frontier {
+    background-color: #1b170e;
+    border-color: #d29922;
+}
+
+.swatch-explored {
+    background-color: #101826;
+    border-color: #388bfd;
+}
+
+.swatch-goal {
+    background-color: #0c2317;
+    border-color: #238636;
+}
+
+.swatch-solution {
+    background-color: #0c2317;
+    border-color: #2ea043;
+}
+
+/* --- Puzzle State Custom Action Buttons (Generate Random & Reset Goal) --- */
+#btn-random {
+    color: #38bdf8 !important;
+    background-color: rgba(56, 189, 248, 0.08) !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+#btn-random:hover {
+    color: #ffffff !important;
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+}
+
+#btn-random:active {
+    transform: translateY(0);
+}
+
+#btn-reset-goal {
+    color: #fbbf24 !important;
+    background-color: rgba(251, 191, 36, 0.08) !important;
+    border: 1px solid rgba(251, 191, 36, 0.45) !important;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+#btn-reset-goal:hover {
+    color: #ffffff !important;
+    background-color: #d97706 !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+    transform: translateY(-1px);
+}
+
+#btn-reset-goal:active {
+    transform: translateY(0);
+}
+
+/* --- Frontier & Explored Switcher Card Styles --- */
+#frontier-explored-card {
+    border-color: rgba(56, 139, 253, 0.25);
+    background: #0d1117;
+}
+
+#frontier-explored-card .card-header {
+    background-color: #161b22 !important;
+}
+
+#frontier-explored-card .nav-pills .nav-link {
+    color: #8b949e;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+#frontier-explored-card .nav-pills .nav-link:hover {
+    color: #f0f6fc;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#frontier-explored-card .nav-pills .nav-link.active {
+    color: #ffffff !important;
+    background-color: #1f6feb !important;
+    box-shadow: 0 0 10px rgba(31, 111, 235, 0.4);
+}
+
+.table-sticky-header {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-sticky-header th {
+    position: sticky;
+    top: 0;
+    background-color: #161b22 !important;
+    z-index: 2;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* --- Horizontal 3x3 Node Cards Ribbon --- */
+.nodes-horizontal-ribbon {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #30363d #0d1117;
+}
+
+.nodes-horizontal-ribbon::-webkit-scrollbar {
+    height: 6px;
+}
+
+.nodes-horizontal-ribbon::-webkit-scrollbar-track {
+    background: #0d1117;
+    border-radius: 4px;
+}
+
+.nodes-horizontal-ribbon::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 4px;
+}
+
+.nodes-horizontal-ribbon::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+}
+
+.frontier-node-card {
+    flex: 0 0 112px;
+    width: 112px;
+    min-height: 148px;
+    background: #161b22;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 6px;
+    box-sizing: border-box;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+
+.frontier-node-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 139, 253, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.frontier-node-card.card-peek {
+    border-color: #2ea043;
+    box-shadow: 0 0 8px rgba(46, 160, 67, 0.35);
+}
+
+.compact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 3px;
+    width: 78px;
+    height: 78px;
+    background-color: #0b0f15;
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 4px auto;
+}
+
+.compact-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #21262d;
+    color: #e6edf3;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--font-mono, monospace);
+    border-radius: 3px;
+    border: 1px solid #30363d;
+}
+
+.compact-tile.tile-blank {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: transparent;
+}
+
+.node-card-more {
+    cursor: pointer;
+    border: 2px dashed #388bfd !important;
+    background: rgba(56, 139, 253, 0.07) !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.node-card-more:hover {
+    background: rgba(56, 139, 253, 0.18) !important;
+    border-color: #58a6ff !important;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 14px rgba(56, 139, 253, 0.35);
+}
+
+/* Scroll containment - isolate scroll in tree viewport and search lists */
+.tree-viewport,
+#frontier-explored-card,
+#frontier-explored-card .card-body,
+.nodes-horizontal-ribbon,
+.table-responsive {
+    overscroll-behavior: contain;
+}
+
+

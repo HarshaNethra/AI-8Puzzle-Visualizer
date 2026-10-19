@@ -19,7 +19,7 @@
         'solved': [1, 2, 3, 4, 5, 6, 7, 8, 0],
         'easy-1': [1, 2, 3, 4, 5, 6, 7, 0, 8],
         'easy-2': [1, 2, 3, 4, 5, 6, 0, 7, 8],
-        'medium-6': [1, 2, 3, 0, 4, 6, 7, 5, 8],
+        'medium-6': [1, 2, 3, 4, 0, 8, 7, 6, 5],
         'hard-14': [0, 8, 2, 5, 7, 3, 1, 4, 6],
         'unsolvable': [2, 1, 3, 4, 5, 6, 7, 8, 0]
     };
@@ -30,15 +30,30 @@
     let playbackIndex = 0;
     let isPlaying = false;
     let playTimer = null;
-    let stepDelay = 500; // ms
+    let stepDelay = 1000; // ms
 
     /**
      * Initializes the controller on page load.
      */
     function init() {
+        // Synchronize speed slider value on load / browser reload
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        if (speedSlider) {
+            stepDelay = parseInt(speedSlider.value, 10) || 1000;
+            if (speedValue) {
+                speedValue.textContent = `${stepDelay} ms`;
+            }
+        }
+
         bindEvents();
         loadInitialInputs(currentState, goalState);
         validateAndSync();
+
+        // Initialize Tree Visualizer
+        if (typeof TreeVisualizer !== 'undefined' && TreeVisualizer.init) {
+            TreeVisualizer.init();
+        }
     }
 
     /**
@@ -104,15 +119,140 @@
         const speedSlider = document.getElementById('speed-slider');
         const speedValue = document.getElementById('speed-value');
         if (speedSlider) {
-            speedSlider.addEventListener('input', (e) => {
-                stepDelay = parseInt(e.target.value, 10);
+            const handleSpeedChange = (val) => {
+                stepDelay = parseInt(val, 10);
                 if (speedValue) speedValue.textContent = `${stepDelay} ms`;
                 if (isPlaying) {
-                    // Reset interval with new delay
                     handlePause();
                     handlePlay();
                 }
+            };
+            speedSlider.addEventListener('input', (e) => handleSpeedChange(e.target.value));
+            speedSlider.addEventListener('change', (e) => handleSpeedChange(e.target.value));
+        }
+
+        // Interactive tile clicking on main board to slide into blank space
+        const mainBoard = document.getElementById('main-board');
+        if (mainBoard) {
+            mainBoard.addEventListener('click', (e) => {
+                if (isPlaying) return;
+                const tile = e.target.closest('.puzzle-tile');
+                if (!tile || !tile.dataset.val) return;
+                const val = parseInt(tile.dataset.val, 10);
+                if (val === 0) return;
+
+                const valIdx = currentState.indexOf(val);
+                const blankIdx = currentState.indexOf(0);
+                if (valIdx === -1 || blankIdx === -1) return;
+
+                const valCoords = PuzzleEngine.indexToCoords(valIdx);
+                const blankCoords = PuzzleEngine.indexToCoords(blankIdx);
+                const dist = Math.abs(valCoords.row - blankCoords.row) + Math.abs(valCoords.col - blankCoords.col);
+                if (dist === 1) {
+                    const newState = currentState.slice();
+                    newState[blankIdx] = val;
+                    newState[valIdx] = 0;
+                    currentState = newState;
+
+                    updateGridInputs('init-grid', currentState);
+
+                    if (searchResult) {
+                        searchResult = null;
+                        playbackIndex = 0;
+                        updateUIPlaybackControls(false);
+                    }
+
+                    Visualizer.renderBoard('main-board', currentState, {
+                        tileMoved: val,
+                        duration: 250,
+                        animate: true
+                    });
+
+                    const valInit = PuzzleEngine.validateState(currentState);
+                    const valGoal = PuzzleEngine.validateState(goalState);
+                    const alertEl = document.getElementById('validation-alert');
+                    const btnRun = document.getElementById('btn-run');
+                    updateStateBadge(null, 0, 0);
+
+                    if (!valInit.isValid) {
+                        showAlert(alertEl, 'Invalid initial state.', 'danger');
+                        if (btnRun) btnRun.disabled = true;
+                    } else if (!valGoal.isValid) {
+                        showAlert(alertEl, 'Invalid goal state.', 'danger');
+                        if (btnRun) btnRun.disabled = true;
+                    } else {
+                        const solvable = PuzzleEngine.isSolvable(currentState, goalState);
+                        if (!solvable) {
+                            showAlert(alertEl, 'Unsolvable Configuration (inversion parity mismatch).', 'warning');
+                            if (btnRun) btnRun.disabled = true;
+                        } else {
+                            showAlert(alertEl, 'Configuration is valid and mathematically solvable.', 'success');
+                            if (btnRun) btnRun.disabled = false;
+                        }
+                    }
+                }
             });
+        }
+
+        // View tabs switching (Tree vs Animated Solution)
+        const tabBtnTree = document.getElementById('tab-btn-tree');
+        const tabBtnBoard = document.getElementById('tab-btn-board');
+        const zoomToolbar = document.getElementById('tree-zoom-toolbar');
+
+        if (tabBtnTree) {
+            tabBtnTree.addEventListener('shown.bs.tab', () => {
+                if (zoomToolbar) zoomToolbar.classList.remove('d-none');
+                if (typeof TreeVisualizer !== 'undefined' && TreeVisualizer.focusOnSolutionNode) {
+                    TreeVisualizer.focusOnSolutionNode(playbackIndex, 0);
+                }
+            });
+        }
+
+        if (tabBtnBoard) {
+            tabBtnBoard.addEventListener('shown.bs.tab', () => {
+                if (zoomToolbar) zoomToolbar.classList.add('d-none');
+                if (searchResult && searchResult.solutionPath && searchResult.solutionPath[playbackIndex]) {
+                    Visualizer.renderBoard('main-board', searchResult.solutionPath[playbackIndex].state, { animate: false });
+                } else {
+                    Visualizer.renderBoard('main-board', currentState, { animate: false });
+                }
+            });
+        }
+
+        // Horizontal mouse-wheel scrolling & isolated scroll trapping on Frontier / Explored card
+        const frontierExploredCard = document.getElementById('frontier-explored-card');
+        if (frontierExploredCard) {
+            frontierExploredCard.addEventListener('wheel', (e) => {
+                const activePane = frontierExploredCard.querySelector('.tab-pane.active');
+                if (!activePane) {
+                    e.preventDefault();
+                    return;
+                }
+                const ribbon = activePane.querySelector('.nodes-horizontal-ribbon');
+                if (ribbon) {
+                    const scrollDelta = (e.deltaY !== 0) ? e.deltaY : e.deltaX;
+                    ribbon.scrollLeft += scrollDelta;
+                    e.preventDefault();
+                    return;
+                }
+                const tableContainer = activePane.querySelector('.table-responsive') || frontierExploredCard.querySelector('.card-body');
+                if (tableContainer) {
+                    tableContainer.scrollTop += e.deltaY;
+                    e.preventDefault();
+                    return;
+                }
+                e.preventDefault();
+            }, { passive: false });
+        }
+
+        // Isolated scroll on State-Space Tree viewport (#tree-container):
+        // Prevents page scrolling while mouse is within tree viewport (where wheel zooms tree)
+        // Note: Animated Solution tab allows normal page scrolling/chaining
+        const treeContainer = document.getElementById('tree-container');
+        if (treeContainer) {
+            treeContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+            }, { passive: false });
         }
     }
 
@@ -208,8 +348,8 @@
         const alertEl = document.getElementById('validation-alert');
         const btnRun = document.getElementById('btn-run');
 
-        // Render main board initially
-        Visualizer.renderBoard('main-board', currentState);
+        // Render main board initially without animation
+        Visualizer.renderBoard('main-board', currentState, { animate: false });
         updateStateBadge(null, 0, 0);
 
         if (!valInit.isValid) {
@@ -259,16 +399,40 @@
         // Run fresh UCS search
         searchResult = UCSEngine.solveUCS(currentState, goalState);
 
+        const alertEl = document.getElementById('validation-alert');
         if (!searchResult.success) {
-            showAlert(document.getElementById('validation-alert'), searchResult.error, 'danger');
+            showAlert(alertEl, `No Solution Found: ${searchResult.error}`, 'danger');
+            updateSolutionSummary(searchResult);
+            Visualizer.updateMetrics(searchResult);
             return;
         }
 
-        // Update overall performance metrics
+        showAlert(alertEl, 'Solution Found', 'success');
+
+        // Update solution summary card & overall performance metrics
+        updateSolutionSummary(searchResult);
         Visualizer.updateMetrics(searchResult);
 
         // Update comparison table row for UCS
         updateComparisonTableRow(searchResult);
+
+        // Render Explored (Closed List) nodes
+        Visualizer.renderExplored('explored-container', searchResult.exploredNodes);
+
+        // Render Solution Path showcase
+        Visualizer.renderSolutionPath('path-container', searchResult.solutionPath, 0, jumpToStep);
+
+        // Render State-Space Tree Visualization
+        if (typeof TreeVisualizer !== 'undefined' && TreeVisualizer.render) {
+            TreeVisualizer.render(searchResult);
+        }
+
+        // Automatically activate the Solution Path inspector tab so user sees the full path immediately
+        const pathTabBtn = document.getElementById('path-tab');
+        if (pathTabBtn && typeof bootstrap !== 'undefined') {
+            const bsTab = bootstrap.Tab.getOrCreateInstance(pathTabBtn);
+            if (bsTab) bsTab.show();
+        }
 
         // Begin playback of the solution trace / path
         playbackIndex = 0;
@@ -317,13 +481,26 @@
         }
     }
 
+    function jumpToStep(index) {
+        if (!searchResult || !searchResult.solutionPath || index < 0 || index >= searchResult.solutionPath.length) return;
+        handlePause();
+        playbackIndex = index;
+        renderCurrentPlaybackStep();
+    }
+
     function handleReset() {
         handlePause();
         searchResult = null;
         playbackIndex = 0;
-        Visualizer.renderBoard('main-board', currentState);
-        updateStateBadge(null, 0, 0);
+        Visualizer.renderBoard('main-board', currentState, { animate: false });
+        updateStateBadge(null, 0, 0, null);
+        const stepCounter = document.getElementById('step-counter');
+        if (stepCounter) {
+            stepCounter.textContent = 'Initial State';
+        }
         Visualizer.updateMetrics({
+            success: null,
+            totalMoves: '—',
             nodesGenerated: 0,
             nodesExpanded: 0,
             pathCost: 0,
@@ -331,8 +508,28 @@
             executionTimeMs: 0,
             approxMemoryBytes: 0
         });
+        if (typeof Visualizer.setFrontierViewMode === 'function') Visualizer.setFrontierViewMode('grid');
+        if (typeof Visualizer.setExploredViewMode === 'function') Visualizer.setExploredViewMode('grid');
         Visualizer.renderFrontier('frontier-container', []);
         Visualizer.renderSuccessors('successors-container', []);
+        Visualizer.renderExplored('explored-container', []);
+        Visualizer.renderSolutionPath('path-container', []);
+        updateSolutionSummary(null);
+
+        const frontierBadge = document.getElementById('frontier-badge-count');
+        if (frontierBadge) frontierBadge.textContent = '0';
+        const exploredBadge = document.getElementById('explored-badge-count');
+        if (exploredBadge) exploredBadge.textContent = '0';
+        const stepIndicator = document.getElementById('lists-step-indicator');
+        if (stepIndicator) stepIndicator.textContent = 'Playback Step: 0';
+
+        // Reset Tree Visualizer
+        if (typeof TreeVisualizer !== 'undefined' && TreeVisualizer.reset) {
+            TreeVisualizer.reset();
+        }
+
+        const alertEl = document.getElementById('validation-alert');
+        showAlert(alertEl, 'Configuration is valid and mathematically solvable.', 'success');
         updateUIPlaybackControls(false);
     }
 
@@ -341,8 +538,21 @@
         const step = searchResult.solutionPath[playbackIndex];
         if (!step) return;
 
-        Visualizer.renderBoard('main-board', step.state, { tileMoved: step.tileMoved });
-        updateStateBadge(step.action, step.cost, step.depth);
+        const animDuration = Math.min(320, Math.max(50, Math.round(stepDelay * 0.65)));
+        Visualizer.renderBoard('main-board', step.state, {
+            tileMoved: step.tileMoved,
+            duration: animDuration,
+            animate: true
+        });
+        updateStateBadge(step.action, step.cost, step.depth, step.parentId, step.id);
+
+        // Update active step in Solution Path showcase
+        Visualizer.renderSolutionPath('path-container', searchResult.solutionPath, playbackIndex, jumpToStep);
+
+        // Update active step in State-Space Tree Visualization
+        if (typeof TreeVisualizer !== 'undefined' && TreeVisualizer.updateStep) {
+            TreeVisualizer.updateStep(playbackIndex);
+        }
 
         // Update step counter in UI
         const stepCounter = document.getElementById('step-counter');
@@ -354,26 +564,134 @@
         const successors = PuzzleEngine.getSuccessors(step.state);
         Visualizer.renderSuccessors('successors-container', successors);
 
-        // Frontier queue display corresponding to current state expansion
+        // Frontier queue & Explored list synchronized with current playback step
         if (searchResult && Array.isArray(searchResult.trace)) {
-            const stepKey = PuzzleEngine.serializeState(step.state);
-            const expandEvent = searchResult.trace.find(
-                e => e.type === 'EXPAND_NODE' && e.state && PuzzleEngine.serializeState(e.state) === stepKey
-            );
-            if (expandEvent && expandEvent.frontierSnapshot) {
-                Visualizer.renderFrontier('frontier-container', expandEvent.frontierSnapshot);
+            let activeFrontierSnapshot = [];
+            let activeFrontierSize = 0;
+            let activeExploredCount = 0;
+
+            if (playbackIndex === 0) {
+                const initEvent = searchResult.trace.find(e => e.type === 'INIT');
+                if (initEvent) {
+                    activeFrontierSnapshot = initEvent.frontierSnapshot || [];
+                    activeFrontierSize = initEvent.frontierSize || activeFrontierSnapshot.length;
+                    activeExploredCount = 0;
+                }
+            } else {
+                const prevStep = searchResult.solutionPath[playbackIndex - 1];
+                const expandEvent = searchResult.trace.find(
+                    e => e.type === 'EXPAND_NODE' && e.nodeId === prevStep.id
+                );
+                if (expandEvent) {
+                    activeFrontierSnapshot = expandEvent.frontierSnapshot || [];
+                    activeFrontierSize = (typeof expandEvent.frontierSize === 'number') ? expandEvent.frontierSize : activeFrontierSnapshot.length;
+                    activeExploredCount = expandEvent.exploredSize || expandEvent.nodesExpanded;
+                } else {
+                    const lastTrace = searchResult.trace[searchResult.trace.length - 1];
+                    if (lastTrace) {
+                        activeFrontierSnapshot = lastTrace.frontierSnapshot || [];
+                        activeFrontierSize = lastTrace.frontierSize || activeFrontierSnapshot.length;
+                        activeExploredCount = searchResult.exploredNodes ? searchResult.exploredNodes.length : 0;
+                    }
+                }
             }
+
+            Visualizer.renderFrontier('frontier-container', activeFrontierSnapshot, activeFrontierSize);
+
+            // Explored list display synchronized with search progress
+            if (searchResult && Array.isArray(searchResult.exploredNodes)) {
+                const nodesUpToNow = (playbackIndex === 0)
+                    ? []
+                    : searchResult.exploredNodes.slice(0, activeExploredCount || playbackIndex);
+                Visualizer.renderExplored('explored-container', nodesUpToNow);
+            }
+
+            // Update badge counters & step indicator
+            const frontierBadge = document.getElementById('frontier-badge-count');
+            if (frontierBadge) frontierBadge.textContent = activeFrontierSize;
+
+            const exploredBadge = document.getElementById('explored-badge-count');
+            if (exploredBadge) exploredBadge.textContent = (playbackIndex === 0 ? 0 : (activeExploredCount || playbackIndex));
+
+            const stepIndicator = document.getElementById('lists-step-indicator');
+            if (stepIndicator) stepIndicator.textContent = `Step ${playbackIndex} / ${searchResult.totalMoves}`;
+        }
+
+        // If goal state reached at end of playback
+        if (playbackIndex === searchResult.solutionPath.length - 1 && searchResult.totalMoves > 0) {
+            const alertEl = document.getElementById('validation-alert');
+            showAlert(alertEl, 'Solution Found', 'success');
         }
     }
 
-    function updateStateBadge(action, cost, depth) {
+    function updateStateBadge(action, cost, depth, parentId, nodeId) {
+        const badgeNode = document.getElementById('badge-node');
         const badgeAction = document.getElementById('badge-action');
         const badgeCost = document.getElementById('badge-cost');
         const badgeDepth = document.getElementById('badge-depth');
+        const badgeParent = document.getElementById('badge-parent');
 
+        if (badgeNode) badgeNode.textContent = nodeId !== undefined && nodeId !== null ? `#${nodeId}` : '#1 (Root)';
         if (badgeAction) badgeAction.textContent = action || 'INITIAL';
         if (badgeCost) badgeCost.textContent = cost !== undefined ? cost : 0;
         if (badgeDepth) badgeDepth.textContent = depth !== undefined ? depth : 0;
+        if (badgeParent) {
+            badgeParent.textContent = parentId ? `Node #${parentId}` : 'None (Root)';
+        }
+    }
+
+    function updateSolutionSummary(result) {
+        const card = document.getElementById('solution-summary-card');
+        if (!card) return;
+        if (!result) {
+            card.classList.add('d-none');
+            return;
+        }
+
+        card.classList.remove('d-none');
+        const badge = document.getElementById('summary-status-badge');
+        const sumStatus = document.getElementById('sum-status');
+        const sumMoves = document.getElementById('sum-moves');
+        const sumGenerated = document.getElementById('sum-generated');
+        const sumExpanded = document.getElementById('sum-expanded');
+        const sumDepth = document.getElementById('sum-depth');
+        const sumTime = document.getElementById('sum-time');
+        const sumCost = document.getElementById('sum-cost');
+        const sumMemory = document.getElementById('sum-memory');
+
+        if (result.success) {
+            if (badge) {
+                badge.className = 'badge bg-success';
+                badge.textContent = 'Solution Found';
+            }
+            if (sumStatus) {
+                sumStatus.className = 'text-success fw-bold';
+                sumStatus.textContent = 'Solution Found';
+            }
+            if (sumMoves) sumMoves.textContent = result.totalMoves;
+            if (sumGenerated) sumGenerated.textContent = result.nodesGenerated;
+            if (sumExpanded) sumExpanded.textContent = result.nodesExpanded;
+            if (sumDepth) sumDepth.textContent = result.maxDepth;
+            if (sumTime) sumTime.textContent = `${result.executionTimeMs} ms`;
+            if (sumCost) sumCost.textContent = result.pathCost;
+            if (sumMemory) sumMemory.textContent = `${(result.approxMemoryBytes / 1024).toFixed(1)} KB`;
+        } else {
+            if (badge) {
+                badge.className = 'badge bg-danger';
+                badge.textContent = 'Not Found';
+            }
+            if (sumStatus) {
+                sumStatus.className = 'text-danger fw-bold';
+                sumStatus.textContent = 'Solution Not Found';
+            }
+            if (sumMoves) sumMoves.textContent = '—';
+            if (sumGenerated) sumGenerated.textContent = result.nodesGenerated || 0;
+            if (sumExpanded) sumExpanded.textContent = result.nodesExpanded || 0;
+            if (sumDepth) sumDepth.textContent = result.maxDepth || 0;
+            if (sumTime) sumTime.textContent = `${result.executionTimeMs || 0} ms`;
+            if (sumCost) sumCost.textContent = '—';
+            if (sumMemory) sumMemory.textContent = result.approxMemoryBytes ? `${(result.approxMemoryBytes / 1024).toFixed(1)} KB` : '—';
+        }
     }
 
     function updateUIPlaybackControls(running) {
@@ -383,7 +701,7 @@
         const btnPrev = document.getElementById('btn-step-prev');
 
         if (btnRun) {
-            btnRun.textContent = running ? 'Running...' : (searchResult && searchResult.success ? '▶ Resume' : '▶ Run Search');
+            btnRun.textContent = running ? 'Running...' : (searchResult && searchResult.success ? 'Resume' : 'Run Search');
             btnRun.classList.toggle('btn-success', !running);
             btnRun.classList.toggle('btn-secondary', running);
         }
@@ -403,13 +721,13 @@
         if (!row) return;
 
         const cells = row.querySelectorAll('td');
-        if (cells.length >= 6) {
-            cells[1].textContent = metrics.success ? 'Yes' : 'No';
-            cells[1].className = metrics.success ? 'text-success fw-bold' : 'text-danger fw-bold';
-            cells[2].textContent = metrics.nodesExpanded;
-            cells[3].textContent = metrics.totalMoves;
-            cells[4].textContent = `${metrics.executionTimeMs} ms`;
-            cells[5].textContent = `${(metrics.approxMemoryBytes / 1024).toFixed(1)} KB`;
+        if (cells.length >= 7) {
+            cells[2].textContent = metrics.success ? 'Yes' : 'No';
+            cells[2].className = metrics.success ? 'text-success fw-bold' : 'text-danger fw-bold';
+            cells[3].textContent = metrics.nodesExpanded;
+            cells[4].textContent = metrics.totalMoves;
+            cells[5].textContent = `${metrics.executionTimeMs} ms`;
+            cells[6].textContent = `${(metrics.approxMemoryBytes / 1024).toFixed(1)} KB`;
         }
     }
 
@@ -422,6 +740,7 @@
         handlePause,
         handleStepNext,
         handleStepPrev,
-        handleReset
+        handleReset,
+        jumpToStep
     };
 }));

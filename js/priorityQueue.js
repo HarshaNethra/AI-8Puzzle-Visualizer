@@ -111,14 +111,19 @@
         }
 
         /**
-         * Returns a shallow copy snapshot of all items currently in the queue,
-         * sorted by priority. Useful for UI inspection of the frontier.
+         * Returns an array containing the top items currently in the PriorityQueue,
+         * sorted by priority. Limits extraction to avoid performance degradation with large heaps.
+         * @param {number} [maxDisplay=15]
          * @returns {Array<{item: *, priority: number}>}
          */
-        getSnapshot() {
+        getSnapshot(maxDisplay = 15) {
+            if (this.heap.length === 0) return [];
+            // Sample only the top candidates in the heap rather than sorting tens of thousands of elements
+            const candidateCount = Math.min(this.heap.length, maxDisplay * 3);
             return this.heap
-                .slice()
+                .slice(0, candidateCount)
                 .sort(this.comparator)
+                .slice(0, maxDisplay)
                 .map(entry => ({
                     item: entry.item,
                     priority: entry.priority

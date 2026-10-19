@@ -41,6 +41,8 @@
         let curr = goalNode;
         while (curr !== null) {
             path.push({
+                id: curr.id,
+                parentId: curr.parent ? curr.parent.id : null,
                 state: curr.state.slice(),
                 action: curr.action,
                 tileMoved: curr.tileMoved,
@@ -83,7 +85,7 @@
             ? performance.now()
             : Date.now();
 
-        const maxExpanded = options.maxExpanded || 50000;
+        const maxExpanded = options.maxExpanded || 20000;
         const recordTrace = options.recordTrace !== false;
 
         // 1. Validation Checks
@@ -100,6 +102,7 @@
                 maxDepth: 0,
                 executionTimeMs: 0,
                 approxMemoryBytes: 0,
+                generatedNodes: [],
                 trace: []
             };
         }
@@ -117,6 +120,7 @@
                 maxDepth: 0,
                 executionTimeMs: 0,
                 approxMemoryBytes: 0,
+                generatedNodes: [],
                 trace: []
             };
         }
@@ -137,6 +141,15 @@
                 maxDepth: 0,
                 executionTimeMs: Math.round((endTime - startTime) * 100) / 100,
                 approxMemoryBytes: estimateMemoryBytes(0, 0),
+                generatedNodes: [{
+                    id: 1,
+                    parentId: null,
+                    state: initialState.slice(),
+                    action: 'ROOT',
+                    tileMoved: null,
+                    cost: 0,
+                    depth: 0
+                }],
                 trace: [{
                     type: 'UNSOLVABLE',
                     message: 'Puzzle has mismatched inversion parity and cannot reach the goal.'
@@ -154,6 +167,8 @@
         let nodesExpanded = 0;
         let maxDepth = 0;
         const trace = [];
+        const exploredNodes = [];
+        const generatedNodes = [];
 
         // Helper to record trace steps
         function addTraceStep(step) {
@@ -180,6 +195,16 @@
         frontierBestCost.set(initialKey, 0);
         nodesGenerated = 1;
 
+        generatedNodes.push({
+            id: rootNode.id,
+            parentId: null,
+            state: rootNode.state.slice(),
+            action: 'ROOT',
+            tileMoved: null,
+            cost: rootNode.cost,
+            depth: rootNode.depth
+        });
+
         addTraceStep({
             type: 'INIT',
             nodeId: rootNode.id,
@@ -187,6 +212,7 @@
             cost: 0,
             depth: 0,
             frontierSize: 1,
+            frontierSnapshot: frontier.getSnapshot(15),
             exploredSize: 0,
             nodesGenerated,
             nodesExpanded
@@ -213,6 +239,14 @@
 
             // Add to explored set (Closed List)
             explored.set(currentKey, currentNode.cost);
+            exploredNodes.push({
+                id: currentNode.id,
+                parentId: currentNode.parent ? currentNode.parent.id : null,
+                state: currentNode.state.slice(),
+                action: currentNode.action || 'ROOT',
+                cost: currentNode.cost,
+                depth: currentNode.depth
+            });
             nodesExpanded++;
             if (currentNode.depth > maxDepth) {
                 maxDepth = currentNode.depth;
@@ -242,14 +276,19 @@
                     state: currentNode.state.slice(),
                     cost: currentNode.cost,
                     depth: currentNode.depth,
-                    totalMoves: currentNode.depth
+                    totalMoves: currentNode.depth,
+                    frontierSize: frontier.size(),
+                    frontierSnapshot: frontier.getSnapshot(15),
+                    exploredSize: explored.size,
+                    nodesGenerated,
+                    nodesExpanded
                 });
                 break;
             }
 
             // Check safety limit
             if (nodesExpanded >= maxExpanded) {
-                terminatedReason = `Search limit reached: expanded ${nodesExpanded} nodes without finding solution.`;
+                terminatedReason = `Search limit reached: expanded ${nodesExpanded} nodes without finding solution. In uninformed Uniform Cost Search, very deep configurations require exponential exploration.`;
                 break;
             }
 
@@ -287,6 +326,16 @@
                 nodesGenerated++;
                 frontier.enqueue(childNode, childNode.cost);
                 frontierBestCost.set(succKey, newCost);
+
+                generatedNodes.push({
+                    id: childNode.id,
+                    parentId: currentNode.id,
+                    state: childNode.state.slice(),
+                    action: childNode.action,
+                    tileMoved: childNode.tileMoved,
+                    cost: childNode.cost,
+                    depth: childNode.depth
+                });
 
                 generatedThisStep.push({
                     nodeId: childNode.id,
@@ -329,6 +378,8 @@
                 maxDepth,
                 executionTimeMs,
                 approxMemoryBytes: estimateMemoryBytes(frontier.size(), explored.size),
+                exploredNodes,
+                generatedNodes,
                 trace
             };
         } else {
@@ -343,6 +394,8 @@
                 maxDepth,
                 executionTimeMs,
                 approxMemoryBytes: estimateMemoryBytes(frontier.size(), explored.size),
+                exploredNodes,
+                generatedNodes,
                 trace
             };
         }

@@ -255,26 +255,42 @@
 
     /**
      * Generates a random solvable 8-puzzle configuration.
-     * Uses uniform random permutations that match the target goal's solvability parity.
+     * Generates a state via a non-reversing random walk from the goal state.
+     * This guarantees solvability while keeping the state space exploration within practical
+     * limits for real-time uninformed browser execution without freezing the UI thread.
      * @param {Array<number>} [goalState=DEFAULT_GOAL_STATE]
      * @param {boolean} [allowSolved=false] If false, guarantees the state is not already solved.
+     * @param {number} [walkLength=14] Number of random moves from the goal
      * @returns {Array<number>}
      */
-    function generateRandomSolvableState(goalState = DEFAULT_GOAL_STATE, allowSolved = false) {
-        let candidate;
-        do {
-            candidate = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-            // Fisher-Yates shuffle
-            for (let i = candidate.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const temp = candidate[i];
-                candidate[i] = candidate[j];
-                candidate[j] = temp;
+    function generateRandomSolvableState(goalState = DEFAULT_GOAL_STATE, allowSolved = false, walkLength = 14) {
+        const opposites = { 'UP': 'DOWN', 'DOWN': 'UP', 'LEFT': 'RIGHT', 'RIGHT': 'LEFT' };
+        let candidate = goalState.slice();
+        let lastMove = null;
+        const movesToMake = Math.max(8, walkLength + Math.floor(Math.random() * 5));
+
+        for (let step = 0; step < movesToMake; step++) {
+            const blank = findBlank(candidate);
+            let valid = getValidMoves(blank);
+            // Avoid immediately undoing the previous move
+            if (lastMove && valid.length > 1) {
+                const filtered = valid.filter(m => m !== opposites[lastMove]);
+                if (filtered.length > 0) valid = filtered;
             }
-        } while (
-            !isSolvable(candidate, goalState) ||
-            (!allowSolved && areStatesEqual(candidate, goalState))
-        );
+            const move = valid[Math.floor(Math.random() * valid.length)];
+            const applied = applyMove(candidate, move);
+            if (applied) {
+                candidate = applied.newState;
+                lastMove = move;
+            }
+        }
+
+        if (!allowSolved && areStatesEqual(candidate, goalState)) {
+            // Apply one valid move to make it non-solved
+            const blank = findBlank(candidate);
+            const valid = getValidMoves(blank);
+            candidate = applyMove(candidate, valid[0]).newState;
+        }
 
         return candidate;
     }

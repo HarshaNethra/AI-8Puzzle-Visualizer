@@ -78,11 +78,11 @@ for (let i = 0; i < resTwoMove.solutionPath.length - 1; i++) {
 
 // --- 5. UCS: Moderate puzzle (6 moves) ---
 console.log('Test 5: UCS with moderate depth puzzle (6 moves)');
-// Initial: [1, 2, 3, 0, 4, 6, 7, 5, 8]
-const testState = [1, 2, 3, 0, 4, 6, 7, 5, 8];
+// Initial: [1, 2, 3, 4, 0, 8, 7, 6, 5]
+const testState = [1, 2, 3, 4, 0, 8, 7, 6, 5];
 const resTest = UCSEngine.solveUCS(testState);
 assert.strictEqual(resTest.success, true);
-assert(resTest.totalMoves > 0, 'Moves should be > 0');
+assert.strictEqual(resTest.totalMoves, 6, 'Moves should be 6');
 assert.strictEqual(resTest.pathCost, resTest.totalMoves);
 assert.deepStrictEqual(resTest.solutionPath[resTest.solutionPath.length - 1].state, solvedState);
 assert(resTest.nodesExpanded > 0);
@@ -110,4 +110,34 @@ assert(trace.some(t => t.type === 'SELECT_NODE'), 'Must have SELECT_NODE event')
 assert(trace.some(t => t.type === 'EXPAND_NODE'), 'Must have EXPAND_NODE event');
 assert(trace.some(t => t.type === 'GOAL_FOUND'), 'Must have GOAL_FOUND event');
 
+// --- 9. UCS: Generated Nodes Tree Integrity Verification ---
+console.log('Test 9: Generated search nodes tree integrity verification');
+assert(Array.isArray(resTwoMove.generatedNodes), 'generatedNodes must be an array');
+assert(resTwoMove.generatedNodes.length > 0, 'generatedNodes must not be empty');
+
+const nodeIds = new Set();
+const nodeMap = new Map();
+resTwoMove.generatedNodes.forEach(node => {
+    assert(!nodeIds.has(node.id), `Duplicate node ID found: ${node.id}`);
+    nodeIds.add(node.id);
+    nodeMap.set(node.id, node);
+    assert(Array.isArray(node.state) && node.state.length === 9, 'Node state must be a 9-element array');
+});
+
+// Verify root node
+const root = resTwoMove.generatedNodes[0];
+assert.strictEqual(root.parentId, null, 'Root node must have parentId null');
+assert.strictEqual(root.depth, 0, 'Root node depth must be 0');
+assert.strictEqual(root.cost, 0, 'Root node cost must be 0');
+
+// Verify all non-root nodes point to an existing parent in the dataset
+for (let i = 1; i < resTwoMove.generatedNodes.length; i++) {
+    const node = resTwoMove.generatedNodes[i];
+    assert(node.parentId !== null, `Non-root node #${node.id} must have a parentId`);
+    assert(nodeMap.has(node.parentId), `Parent #${node.parentId} of node #${node.id} must exist in generatedNodes`);
+    const parent = nodeMap.get(node.parentId);
+    assert.strictEqual(node.depth, parent.depth + 1, `Child depth must equal parent depth + 1`);
+}
+
 console.log('All PriorityQueue & UCSEngine tests PASSED successfully!');
+

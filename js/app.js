@@ -19,8 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
 /**
  * Navigates between different sections in the Single Page Application
  * @param {string} sectionId - The ID of the section to show
+ * @param {Event} [event] - Optional click event to prevent browser default anchor jumping
  */
-function navigate(sectionId) {
+function navigate(sectionId, event) {
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
+
     // 1. Hide all sections
     const sections = document.querySelectorAll('.page-section');
     sections.forEach(section => {
@@ -34,7 +39,7 @@ function navigate(sectionId) {
     }
 
     // 3. Update navbar active state
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('#navbarNav .nav-link, .navbar-nav .nav-link');
     navLinks.forEach(link => {
         link.classList.remove('active');
     });
@@ -57,4 +62,26 @@ function navigate(sectionId) {
             navbarCollapse.classList.remove('show');
         }
     }
+
+    // 5. Scroll behavior: If already at the top, do nothing. Else, take user to the top.
+    const currentScroll = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if (currentScroll > 0) {
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'instant'
+        });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }
+
+    // 6. Keep URL hash synchronized without unwanted anchor scrolling offset
+    if (window.location.hash !== `#${sectionId}`) {
+        if (history.pushState) {
+            history.pushState(null, '', `#${sectionId}`);
+        } else {
+            window.location.hash = sectionId;
+        }
+    }
 }
+
