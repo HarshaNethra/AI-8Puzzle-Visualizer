@@ -411,7 +411,6 @@
 
         // Update solution summary card & overall performance metrics
         updateSolutionSummary(searchResult);
-        Visualizer.updateMetrics(searchResult);
 
         // Update comparison table row for UCS
         updateComparisonTableRow(searchResult);
@@ -564,18 +563,49 @@
         const successors = PuzzleEngine.getSuccessors(step.state);
         Visualizer.renderSuccessors('successors-container', successors);
 
-        // Frontier queue & Explored list synchronized with current playback step
-        if (searchResult && Array.isArray(searchResult.trace)) {
-            let activeFrontierSnapshot = [];
-            let activeFrontierSize = 0;
-            let activeExploredCount = 0;
+        // Frontier queue, Explored list, & Search Metrics synchronized with tree at current playback step
+        let activeFrontierSnapshot = [];
+        let activeFrontierSize = 0;
+        let activeExploredCount = 0;
+        let activeExploredNodes = [];
+        let activeGenerated = 1;
+        let activeExpanded = 0;
 
+        const treeMetrics = (typeof TreeVisualizer !== 'undefined' && typeof TreeVisualizer.getTreeMetricsAtStep === 'function')
+            ? TreeVisualizer.getTreeMetricsAtStep(playbackIndex)
+            : null;
+
+        if (treeMetrics) {
+            activeGenerated = treeMetrics.totalGenerated;
+            activeExpanded = treeMetrics.nodesExpanded;
+            activeFrontierSize = treeMetrics.frontierSize;
+            activeExploredCount = treeMetrics.exploredSize;
+            activeFrontierSnapshot = treeMetrics.frontierItems;
+            activeExploredNodes = treeMetrics.exploredNodes;
+        } else if (searchResult && Array.isArray(searchResult.trace)) {
             if (playbackIndex === 0) {
                 const initEvent = searchResult.trace.find(e => e.type === 'INIT');
                 if (initEvent) {
                     activeFrontierSnapshot = initEvent.frontierSnapshot || [];
-                    activeFrontierSize = initEvent.frontierSize || activeFrontierSnapshot.length;
+                    activeFrontierSize = (typeof initEvent.frontierSize === 'number') ? initEvent.frontierSize : activeFrontierSnapshot.length;
                     activeExploredCount = 0;
+                    activeGenerated = (typeof initEvent.nodesGenerated === 'number') ? initEvent.nodesGenerated : 1;
+                    activeExpanded = (typeof initEvent.nodesExpanded === 'number') ? initEvent.nodesExpanded : 0;
+                }
+            } else if (playbackIndex === searchResult.solutionPath.length - 1) {
+                const goalEvent = searchResult.trace.find(e => e.type === 'GOAL_FOUND');
+                if (goalEvent) {
+                    activeFrontierSnapshot = goalEvent.frontierSnapshot || [];
+                    activeFrontierSize = (typeof goalEvent.frontierSize === 'number') ? goalEvent.frontierSize : activeFrontierSnapshot.length;
+                    activeExploredCount = goalEvent.exploredSize || (searchResult.exploredNodes ? searchResult.exploredNodes.length : 0);
+                    activeGenerated = (typeof goalEvent.nodesGenerated === 'number') ? goalEvent.nodesGenerated : searchResult.nodesGenerated;
+                    activeExpanded = (typeof goalEvent.nodesExpanded === 'number') ? goalEvent.nodesExpanded : searchResult.nodesExpanded;
+                } else {
+                    activeFrontierSnapshot = [];
+                    activeFrontierSize = 0;
+                    activeExploredCount = searchResult.exploredNodes ? searchResult.exploredNodes.length : 0;
+                    activeGenerated = searchResult.nodesGenerated;
+                    activeExpanded = searchResult.nodesExpanded;
                 }
             } else {
                 const prevStep = searchResult.solutionPath[playbackIndex - 1];
@@ -586,36 +616,55 @@
                     activeFrontierSnapshot = expandEvent.frontierSnapshot || [];
                     activeFrontierSize = (typeof expandEvent.frontierSize === 'number') ? expandEvent.frontierSize : activeFrontierSnapshot.length;
                     activeExploredCount = expandEvent.exploredSize || expandEvent.nodesExpanded;
+                    activeGenerated = (typeof expandEvent.nodesGenerated === 'number') ? expandEvent.nodesGenerated : searchResult.nodesGenerated;
+                    activeExpanded = (typeof expandEvent.nodesExpanded === 'number') ? expandEvent.nodesExpanded : searchResult.nodesExpanded;
                 } else {
                     const lastTrace = searchResult.trace[searchResult.trace.length - 1];
                     if (lastTrace) {
                         activeFrontierSnapshot = lastTrace.frontierSnapshot || [];
                         activeFrontierSize = lastTrace.frontierSize || activeFrontierSnapshot.length;
                         activeExploredCount = searchResult.exploredNodes ? searchResult.exploredNodes.length : 0;
+                        activeGenerated = (typeof lastTrace.nodesGenerated === 'number') ? lastTrace.nodesGenerated : searchResult.nodesGenerated;
+                        activeExpanded = (typeof lastTrace.nodesExpanded === 'number') ? lastTrace.nodesExpanded : searchResult.nodesExpanded;
                     }
                 }
             }
 
-            Visualizer.renderFrontier('frontier-container', activeFrontierSnapshot, activeFrontierSize);
-
-            // Explored list display synchronized with search progress
-            if (searchResult && Array.isArray(searchResult.exploredNodes)) {
-                const nodesUpToNow = (playbackIndex === 0)
-                    ? []
-                    : searchResult.exploredNodes.slice(0, activeExploredCount || playbackIndex);
-                Visualizer.renderExplored('explored-container', nodesUpToNow);
-            }
-
-            // Update badge counters & step indicator
-            const frontierBadge = document.getElementById('frontier-badge-count');
-            if (frontierBadge) frontierBadge.textContent = activeFrontierSize;
-
-            const exploredBadge = document.getElementById('explored-badge-count');
-            if (exploredBadge) exploredBadge.textContent = (playbackIndex === 0 ? 0 : (activeExploredCount || playbackIndex));
-
-            const stepIndicator = document.getElementById('lists-step-indicator');
-            if (stepIndicator) stepIndicator.textContent = `Step ${playbackIndex} / ${searchResult.totalMoves}`;
+            activeExploredNodes = (playbackIndex === 0)
+                ? []
+                : (searchResult.exploredNodes ? searchResult.exploredNodes.slice(0, activeExploredCount || playbackIndex) : []);
         }
+
+        Visualizer.renderFrontier('frontier-container', activeFrontierSnapshot, activeFrontierSize);
+        Visualizer.renderExplored('explored-container', activeExploredNodes);
+
+        // Update badge counters & step indicator
+        const frontierBadge = document.getElementById('frontier-badge-count');
+        if (frontierBadge) frontierBadge.textContent = activeFrontierSize;
+
+        const exploredBadge = document.getElementById('explored-badge-count');
+        if (exploredBadge) exploredBadge.textContent = activeExploredCount;
+
+        const stepIndicator = document.getElementById('lists-step-indicator');
+        if (stepIndicator) stepIndicator.textContent = `Step ${playbackIndex} / ${searchResult.totalMoves}`;
+
+        // Dynamically update Search Performance Metrics per playback step
+        const movesDisplay = (searchResult.totalMoves === 0)
+            ? 0
+            : (playbackIndex === searchResult.solutionPath.length - 1
+                ? `${searchResult.totalMoves}`
+                : `${playbackIndex} / ${searchResult.totalMoves}`);
+
+        Visualizer.updateMetrics({
+            success: true,
+            totalMoves: movesDisplay,
+            nodesGenerated: activeGenerated,
+            nodesExpanded: activeExpanded,
+            currentCost: step.cost,
+            currentDepth: step.depth,
+            executionTimeMs: searchResult.executionTimeMs,
+            approxMemoryBytes: searchResult.approxMemoryBytes
+        });
 
         // If goal state reached at end of playback
         if (playbackIndex === searchResult.solutionPath.length - 1 && searchResult.totalMoves > 0) {

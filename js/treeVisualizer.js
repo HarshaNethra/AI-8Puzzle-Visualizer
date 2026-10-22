@@ -655,12 +655,54 @@
         }
     }
 
+    /**
+     * Calculates dynamic tree metrics for the given playback step:
+     * - generated: total visible nodes in the tree
+     * - expanded / closed: all visible nodes except children (nodes with visible children)
+     * - frontier: all visible children (leaf nodes waiting to be expanded)
+     * @param {number} stepIndex
+     * @returns {Object|null}
+     */
+    function getTreeMetricsAtStep(stepIndex) {
+        if (!allHierarchyNodes || allHierarchyNodes.length === 0) {
+            return null;
+        }
+
+        const visibleNodes = allHierarchyNodes.filter(d => d.data.appearStep <= stepIndex);
+        const visibleIdSet = new Set(visibleNodes.map(d => d.data.id));
+
+        const expandedNodes = [];
+        const frontierItems = [];
+
+        visibleNodes.forEach(d => {
+            const hasVisibleChildren = Array.isArray(d.children) && d.children.some(c => visibleIdSet.has(c.data.id));
+            if (hasVisibleChildren) {
+                expandedNodes.push(d.data);
+            } else {
+                frontierItems.push({
+                    item: d.data,
+                    priority: d.data.cost !== undefined ? d.data.cost : 0
+                });
+            }
+        });
+
+        return {
+            totalGenerated: visibleNodes.length,
+            nodesExpanded: expandedNodes.length,
+            frontierSize: frontierItems.length,
+            exploredSize: expandedNodes.length,
+            frontierItems: frontierItems,
+            exploredNodes: expandedNodes
+        };
+    }
+
     return {
         init,
         render,
         updateStep,
         reset,
         fitToViewport,
-        focusOnSolutionNode
+        focusOnSolutionNode,
+        getTreeMetricsAtStep
     };
 }));
